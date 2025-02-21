@@ -26,13 +26,22 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // 📌 1️⃣ Configuration CORS bien placée
-const allowedOrigins = [
-  'https://projetmairiefrontend-3dfbbe90c62f.herokuapp.com',
-  'http://10.7.121.39:8082',
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'http://localhost:3002'
-];
+// const allowedOrigins = [
+//   'https://projetmairiefrontend-3dfbbe90c62f.herokuapp.com',
+//   'exp://192.168.0.100:8081',  
+//   'http://localhost:3000',
+//   'http://localhost:3001',
+//   'http://localhost:3002'
+// ];
+
+
+app.use(cors({
+  origin: '*',  // 🔴 TEMPORAIRE : Autorise toutes les origines
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+
 
 app.use(cors({
   origin: allowedOrigins,
