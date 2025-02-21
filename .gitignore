@@ -1,0 +1,11 @@
+# Ignorer les dépendances Node.js
+node_modules/
+package-lock.json
+
+# Ignorer les fichiers de configuration sensibles
+.env
+config.js
+
+# Ignorer les logs et les fichiers temporaires
+logs/
+.DS_Store
