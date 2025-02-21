@@ -27,7 +27,7 @@ const PORT = process.env.PORT || 5000;
 
 // 📌 1️⃣ Configuration CORS bien placée
 const allowedOrigins = [
-  'https://mairietxtfrontend-faa0da7e21d3.herokuapp.com',
+  'https://projetmairiefrontend-3dfbbe90c62f.herokuapp.com',
   'http://10.7.121.39:8082',
   'http://localhost:3000',
   'http://localhost:3001',
