@@ -5,7 +5,7 @@ const express = require("express");
 const {
   getTaxesByTaxpayer,
   deleteTaxpayerTaxEntry, // ✅ Contrôleur à ajouter ensuite
-} = require("../controllers/taxpayertaxController");
+} = require("../controllers/taxpayerTaxController");
 const authMiddleware = require("../middleware/authMiddleware");
 const roleMiddleware = require("../middleware/roleMiddleware");
 
