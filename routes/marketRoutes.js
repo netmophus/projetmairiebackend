@@ -7,12 +7,14 @@ const marketController = require('../controllers/marketController');
 // Create a new market
 router.post('/', authMiddleware, roleMiddleware(['admin']), marketController.createMarket);
 
+
+// Mise à jour des collecteurs d'un marché
+//router.put('/markets/:marketId/collectors', authMiddleware, roleMiddleware(['admin']), marketController.updateMarketCollectors);
+router.put('/:marketId/collectors', authMiddleware, roleMiddleware(['admin']), marketController.updateMarketCollectors);
+
+
 // Get all markets
 router.get('/', authMiddleware, roleMiddleware(['admin', 'collector']), marketController.getMarkets);
-
-
-// // Récupérer les collecteurs pour un marché
-// router.get('/collectors', authMiddleware, roleMiddleware(['admin']), marketController.getCollectorsForMarket);
 
 
 router.get('/collector-markets', authMiddleware, roleMiddleware(['collector']), marketController.getMarketsByCollector);
@@ -20,6 +22,8 @@ router.get('/collector-markets', authMiddleware, roleMiddleware(['collector']), 
 
 // Get all collectors
 router.get('/collectorss', authMiddleware, roleMiddleware(['admin']), marketController.getCollectors);
+
+
 
 
 module.exports = router;

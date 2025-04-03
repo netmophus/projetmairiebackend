@@ -13,6 +13,9 @@ const paymentSchema = new mongoose.Schema({
   receiptId: { type: mongoose.Schema.Types.ObjectId, ref: 'ReceiptBatch' }, // Optionnel
   date: { type: Date, default: Date.now },
   collector: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+
+   // ✅ CHAMP AJOUTÉ ICI
+   source: { type: String, enum: ['regular', 'unpaid'], default: 'regular' },
 });
 
 module.exports = mongoose.model('Payment', paymentSchema);

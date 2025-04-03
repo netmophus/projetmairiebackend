@@ -1,71 +1,6 @@
 
 
 
-// const express = require('express');
-// const router = express.Router();
-// const authMiddleware = require('../middleware/authMiddleware');
-// const roleMiddleware = require('../middleware/roleMiddleware');
-// const paymentController = require('../controllers/paymentController');
-
-// // Route pour enregistrer un paiement
-
-// // Route pour créer un paiement
-// router.post(
-//   '/taxpayer-payments', // Le chemin que le frontend appelle
-//   authMiddleware,
-//   roleMiddleware('collector'),
-//   paymentController.createPayment
-// );
-
-
-// router.get(
-//   '/taxpayers-with-taxes',
-//   authMiddleware, // Vérifie l'authentification
-//   roleMiddleware('collector'), // Vérifie que l'utilisateur est un collecteur
-//   paymentController.getTaxpayersWithTaxes // Appelle le contrôleur pour récupérer les données
-// );
-
-
-// router.get(
-//   '/collector',
-//   authMiddleware,
-//   roleMiddleware('collector'),
-//   paymentController.getPaymentsByCollector
-// );
-
-
-// router.get(
-//   '/taxpayer/:taxpayerId/payment-list',
-//   authMiddleware,
-//   roleMiddleware('collector'),
-//   paymentController.getPaymentListByTaxpayer
-// );
-
-// // Route pour récupérer les informations du contribuable et les paiements
-// router.get(
-//   '/taxpayer/:taxpayerId/payment-details',
-//   authMiddleware,
-//   roleMiddleware('collector'),
-//   paymentController.getPaymentDetailsByTaxpayer
-// );
-
-
-// router.get(
-//   '/taxpayer/:taxpayerId/payment-details',
-//   authMiddleware,
-//   roleMiddleware('collector'),
-//   paymentController.getPaymentDetailsByTaxpayer
-// );
-
-
-// module.exports = router;
-
-
-
-
-
-
-
 
 
 
@@ -73,11 +8,14 @@
 
 
 const express = require('express');
-const { addPayment, getPayments, addMarketTaxPayment, addOccupationPayment, getPaymentReceipt, getTaxpayers,   getPaymentsSummary} = require('../controllers/paymentController');
+const { addUnpaidPayment, addPayment, getPayments, addMarketTaxPayment, addOccupationPayment, getPaymentReceipt, getTaxpayers,   getPaymentsSummary} = require('../controllers/paymentController');
 const authMiddleware = require('../middleware/authMiddleware');
 const roleMiddleware = require('../middleware/roleMiddleware');
 
 const router = express.Router();
+
+router.post('/unpaid', authMiddleware, roleMiddleware("collector"), addUnpaidPayment);
+
 
 // Route pour enregistrer un paiement pour les taxes de marché
 // router.post('/taxmarket', authMiddleware, roleMiddleware('collector'), addMarketTaxPayment);
@@ -95,6 +33,7 @@ router.get('/paginated', authMiddleware, getTaxpayers);
 
 // Route pour récupérer les paiements
 router.get('/', authMiddleware, getPayments);
+
 
 
 // Route pour récupérer les détails d'un paiement pour générer le reçu PDF

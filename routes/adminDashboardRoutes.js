@@ -93,6 +93,18 @@ router.get(
 );
 
 
+router.get(
+  '/user-info',
+  authMiddleware,
+  (req, res) => {
+    console.log("🔑 Récupération des informations de l'utilisateur connecté");
+    res.json({
+      name: req.user.name,
+      phone: req.user.phone
+    });
+  }
+);
+
 
 
 module.exports = router;

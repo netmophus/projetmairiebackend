@@ -1,0 +1,46 @@
+const mongoose = require('mongoose');
+
+const taxNoticeEntrySchema = new mongoose.Schema({
+  tax: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Tax', 
+    required: true 
+  },
+  // Montant initial calculé lors de l'association (ex: m² × taux)
+  initialAmount: { 
+    type: Number, 
+    required: true 
+  },
+  // Date d'échéance pour ce cycle
+  dueDate: { 
+    type: Date, 
+    required: true 
+  }
+});
+
+const taxNoticeSchema = new mongoose.Schema({
+  taxpayer: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Taxpayer', 
+    required: true 
+  },
+  // Liste des taxes incluses dans cet avis d'imposition
+  taxes: [taxNoticeEntrySchema],
+  // Montant global de l'avis (peut être la somme des montants initiaux)
+  totalAmount: { 
+    type: Number, 
+    required: true 
+  },
+  // Statut de l'avis : pending, paid ou overdue
+  status: { 
+    type: String, 
+    enum: ['pending', 'paid', 'overdue'], 
+    default: 'pending' 
+  },
+  createdAt: { 
+    type: Date, 
+    default: Date.now 
+  }
+});
+
+module.exports = mongoose.model('TaxNotice', taxNoticeSchema);

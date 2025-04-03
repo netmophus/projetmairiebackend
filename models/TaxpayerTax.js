@@ -35,7 +35,7 @@ const taxpayerTaxSchema = new mongoose.Schema({
   }, // Date d'échéance
   status: { 
     type: String, 
-    enum: ['pending', 'paid', 'overdue'], 
+    enum: ['pending', 'paid', 'overdue', 'archived'], 
     default: 'pending' 
   }, // Statut de la taxe
   payments: [
@@ -45,9 +45,11 @@ const taxpayerTaxSchema = new mongoose.Schema({
       collector: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Collecteur
     },
   ], // Historique des paiements
-  surface: { 
-    type: Number  // Champ optionnel pour enregistrer la surface (en m²)
-  },
+  surface: { type: mongoose.Schema.Types.Mixed } ,// 🔹 Permet de stocker un objet pour la taxe de publicité
+  details: { type: mongoose.Schema.Types.Mixed }, // ✅ Stocke days (salubrité) et pumpCount (pompes)
+ 
+ 
+  isRenewed: { type: Boolean, default: false }, // 🔥 Indicateur de renouvellement
   createdAt: { 
     type: Date, 
     default: Date.now 

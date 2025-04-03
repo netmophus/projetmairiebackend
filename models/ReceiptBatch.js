@@ -15,7 +15,9 @@ const ConfirmationCodeSchema = new Schema({
 // Modèle principal pour le lot de reçus
 const ReceiptBatchSchema = new Schema({
   market: { type: Types.ObjectId, ref: 'Market', required: true }, // Référence au marché
-  collector: { type: Types.ObjectId, ref: 'User', required: true }, // Référence à User pour le collecteur
+  //collector: { type: Types.ObjectId, ref: 'User', required: true }, // Référence à User pour le collecteur
+  collector: [{ type: Types.ObjectId, ref: 'User', required: true }],
+
   startReceipt: { type: String, required: true }, // Reçu de départ
   endReceipt: { type: String, required: true }, // Reçu de fin
   confirmationCodes: {

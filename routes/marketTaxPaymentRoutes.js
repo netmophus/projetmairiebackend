@@ -10,4 +10,15 @@ router.post('/', authMiddleware, roleMiddleware(['collector']), marketTaxPayment
 // Get all payments for a specific market
 router.get('/:marketId', authMiddleware, roleMiddleware(['admin', 'collector']), marketTaxPaymentController.getMarketPayments);
 
+
+
+
+// Route pour récupérer le rapport de collecte
+router.get(
+    '/admin/marketreporting/:marketId',
+    authMiddleware,
+    roleMiddleware(['admin']),
+    marketTaxPaymentController.getMarketReport
+  );
+
 module.exports = router;

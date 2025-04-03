@@ -1,6 +1,8 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User'); // Assurez-vous que le chemin correspond à votre modèle
+const Otp = require('../models/Otp');
+const { sendSMS } = require('../utils/sendSMS'); // ✅ Import de sendSMS
 
 
 const registerUser = async (req, res) => {
@@ -70,6 +72,13 @@ const loginUser = async (req, res) => {
       role: user.role,
     });
 
+
+      // ✅ Vérifier si l'utilisateur est désactivé
+      if (user.status !== 'active') {
+        return res.status(403).json({ message: "Compte désactivé. Veuillez contacter l'administrateur." });
+      }
+  
+
     // Vérification du mot de passe
     console.log('Vérification du mot de passe...');
     const isMatch = await bcrypt.compare(password, user.password);
@@ -111,4 +120,69 @@ const loginUser = async (req, res) => {
 };
 
 
-module.exports = { registerUser, loginUser };
+// ✅ Générer un OTP aléatoire
+const generateOtp = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString(); // 6 chiffres
+};
+
+// 🔵 1. Génération et envoi de l'OTP
+const requestOtp = async (req, res) => {
+  try {
+    const { phone } = req.body;
+
+    // Vérifier si l'utilisateur existe
+    const user = await User.findOne({ phone });
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé." });
+    }
+
+    // Génération de l'OTP
+    const otp = generateOtp();
+    console.log('✅ OTP généré :', otp);
+
+    // Enregistrement de l'OTP dans la base de données
+    await Otp.create({ phone, otp });
+
+    // Envoi de l'OTP par SMS
+    const message = `Votre code de vérification est : ${otp}`;
+    await sendSMS(phone, message);
+
+    res.status(200).json({ message: "OTP envoyé avec succès." });
+  } catch (err) {
+    console.error('❌ Erreur lors de l\'envoi de l\'OTP :', err.message);
+    res.status(500).json({ message: "Erreur interne du serveur." });
+  }
+};
+
+// 🔵 2. Validation de l'OTP et changement de mot de passe
+const changePassword = async (req, res) => {
+  try {
+    const { phone, otp, newPassword } = req.body;
+
+    // Vérification de l'OTP
+    const otpRecord = await Otp.findOne({ phone, otp });
+    if (!otpRecord) {
+      return res.status(400).json({ message: "OTP invalide ou expiré." });
+    }
+
+    // Hachage du nouveau mot de passe
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Mise à jour du mot de passe
+    await User.findOneAndUpdate({ phone }, { password: hashedPassword });
+
+    // Suppression de l'OTP après utilisation
+    await Otp.deleteMany({ phone });
+
+    res.status(200).json({ message: "Mot de passe changé avec succès." });
+  } catch (err) {
+    console.error('❌ Erreur lors du changement de mot de passe :', err.message);
+    res.status(500).json({ message: "Erreur interne du serveur." });
+  }
+};
+
+
+
+
+
+module.exports = { registerUser, loginUser, requestOtp, changePassword };
