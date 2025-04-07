@@ -207,35 +207,82 @@ exports.getAllReceiptBatches = async (req, res) => {
   }
 };
 
+// Récupérer tous les lots de reçus d'un collecteur spécifique
+// exports.getAllReceiptBatches = async (req, res) => {
+//   try {
+//     const { collectorId } = req.params;
+
+//     if (!collectorId) {
+//       return res.status(400).json({ message: "L'identifiant du collecteur est requis." });
+//     }
+
+//     const receiptBatches = await ReceiptBatch.find({ collector: collectorId })
+//       .populate('market', 'name location')
+//       .populate('collector', 'name phone');
+      
+//     if (receiptBatches.length === 0) {
+//       return res.status(404).json({ message: "Aucun lot de reçus trouvé pour ce collecteur." });
+//     }
+
+//     res.status(200).json(receiptBatches);
+//   } catch (err) {
+//     console.error('Erreur lors de la récupération des lots de reçus :', err.message);
+//     res.status(500).json({ message: 'Erreur interne du serveur.' });
+//   }
+// };
 
 
 
 
 
 
+
+// exports.getReceiptBatchById = async (req, res) => {
+//   const { id } = req.params;
+//   //console.log("📥 Requête reçue pour récupérer le batch avec ID :", id);
+
+//   try {
+//     const batch = await ReceiptBatch.findById(id)
+//       .populate('market', 'name location') // Inclut nom et localisation du marché
+//       .populate('collector', 'name'); // Inclut le collecteur
+
+//     if (!batch) {
+//       console.log("❌ Aucun batch trouvé pour cet ID :", id);
+//       return res.status(404).json({ message: "Lot non trouvé" });
+//     }
+
+//     console.log("✅ Lot trouvé :", JSON.stringify(batch, null, 2));
+//     return res.json(batch); // Retourne les données directement
+//   } catch (error) {
+//     console.error("❌ Erreur lors de la récupération du batch :", error.message);
+//     return res.status(500).json({ message: "Erreur interne du serveur" });
+//   }
+// };
 
 exports.getReceiptBatchById = async (req, res) => {
-  const { id } = req.params;
-  //console.log("📥 Requête reçue pour récupérer le batch avec ID :", id);
+  const { id, collectorId } = req.params;
+
+  if (!collectorId) {
+    return res.status(400).json({ message: "L'identifiant du collecteur est requis." });
+  }
 
   try {
-    const batch = await ReceiptBatch.findById(id)
-      .populate('market', 'name location') // Inclut nom et localisation du marché
-      .populate('collector', 'name'); // Inclut le collecteur
+    const batch = await ReceiptBatch.findOne({ _id: id, collector: collectorId })
+      .populate('market', 'name location')
+      .populate('collector', 'name');
 
     if (!batch) {
-      console.log("❌ Aucun batch trouvé pour cet ID :", id);
-      return res.status(404).json({ message: "Lot non trouvé" });
+      console.log("❌ Aucun lot trouvé pour cet ID ou ce collecteur :", id);
+      return res.status(404).json({ message: "Lot non trouvé pour ce collecteur." });
     }
 
     console.log("✅ Lot trouvé :", JSON.stringify(batch, null, 2));
-    return res.json(batch); // Retourne les données directement
+    return res.json(batch);
   } catch (error) {
-    console.error("❌ Erreur lors de la récupération du batch :", error.message);
+    console.error("❌ Erreur lors de la récupération du lot :", error.message);
     return res.status(500).json({ message: "Erreur interne du serveur" });
   }
 };
-
 
 exports.getTotalGeneratedReceipts = async (req, res) => {
   //console.log("📥 Début de la récupération du nombre de reçus générés...");
