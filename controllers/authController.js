@@ -144,7 +144,7 @@ const requestOtp = async (req, res) => {
     await Otp.create({ phone, otp });
 
     // Envoi de l'OTP par SMS
-    const message = `Votre code de vérification est : ${otp}`;
+    const message = `votre code OTP:  ${otp}`;
     await sendSMS(phone, message);
 
     res.status(200).json({ message: "OTP envoyé avec succès." });
@@ -182,7 +182,21 @@ const changePassword = async (req, res) => {
 };
 
 
+const getUserInfo = async (req, res) => {
+  try {
+    // Supposons que req.user ait été défini par ton middleware d'authentification
+    // et que tu puisses récupérer l'utilisateur depuis ta base de données.
+    const user = await User.findById(req.user.id).select('id name phone role');
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("Erreur en récupérant les infos utilisateur :", error);
+    res.status(500).json({ message: 'Erreur interne du serveur.' });
+  }
+};
 
 
 
-module.exports = { registerUser, loginUser, requestOtp, changePassword };
+module.exports = { registerUser, loginUser, requestOtp, changePassword , getUserInfo};

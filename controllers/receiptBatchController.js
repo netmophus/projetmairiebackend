@@ -208,72 +208,47 @@ exports.getAllReceiptBatches = async (req, res) => {
 };
 
 // Récupérer tous les lots de reçus d'un collecteur spécifique
-// exports.getAllReceiptBatches = async (req, res) => {
-//   try {
-//     const { collectorId } = req.params;
-
-//     if (!collectorId) {
-//       return res.status(400).json({ message: "L'identifiant du collecteur est requis." });
-//     }
-
-//     const receiptBatches = await ReceiptBatch.find({ collector: collectorId })
-//       .populate('market', 'name location')
-//       .populate('collector', 'name phone');
-      
-//     if (receiptBatches.length === 0) {
-//       return res.status(404).json({ message: "Aucun lot de reçus trouvé pour ce collecteur." });
-//     }
-
-//     res.status(200).json(receiptBatches);
-//   } catch (err) {
-//     console.error('Erreur lors de la récupération des lots de reçus :', err.message);
-//     res.status(500).json({ message: 'Erreur interne du serveur.' });
-//   }
-// };
-
-
-
-
 
 
 
 // exports.getReceiptBatchById = async (req, res) => {
-//   const { id } = req.params;
-//   //console.log("📥 Requête reçue pour récupérer le batch avec ID :", id);
+//   const { id, collectorId } = req.params;
+
+//   if (!collectorId) {
+//     return res.status(400).json({ message: "L'identifiant du collecteur est requis." });
+//   }
 
 //   try {
-//     const batch = await ReceiptBatch.findById(id)
-//       .populate('market', 'name location') // Inclut nom et localisation du marché
-//       .populate('collector', 'name'); // Inclut le collecteur
+//     const batch = await ReceiptBatch.findOne({ _id: id, collector: collectorId })
+//       .populate('market', 'name location')
+//       .populate('collector', 'name');
 
 //     if (!batch) {
-//       console.log("❌ Aucun batch trouvé pour cet ID :", id);
-//       return res.status(404).json({ message: "Lot non trouvé" });
+//       console.log("❌ Aucun lot trouvé pour cet ID ou ce collecteur :", id);
+//       return res.status(404).json({ message: "Lot non trouvé pour ce collecteur." });
 //     }
 
 //     console.log("✅ Lot trouvé :", JSON.stringify(batch, null, 2));
-//     return res.json(batch); // Retourne les données directement
+//     return res.json(batch);
 //   } catch (error) {
-//     console.error("❌ Erreur lors de la récupération du batch :", error.message);
+//     console.error("❌ Erreur lors de la récupération du lot :", error.message);
 //     return res.status(500).json({ message: "Erreur interne du serveur" });
 //   }
 // };
 
-exports.getReceiptBatchById = async (req, res) => {
-  const { id, collectorId } = req.params;
 
-  if (!collectorId) {
-    return res.status(400).json({ message: "L'identifiant du collecteur est requis." });
-  }
+exports.getReceiptBatchById = async (req, res) => {
+  const { id } = req.params;
 
   try {
-    const batch = await ReceiptBatch.findOne({ _id: id, collector: collectorId })
+    const batch = await ReceiptBatch.findById(id)
       .populate('market', 'name location')
-      .populate('collector', 'name');
+      .populate('collector', 'name phone'); // 🔥 Modification ici : Récupère aussi le téléphone
+
 
     if (!batch) {
-      console.log("❌ Aucun lot trouvé pour cet ID ou ce collecteur :", id);
-      return res.status(404).json({ message: "Lot non trouvé pour ce collecteur." });
+      console.log("❌ Aucun lot trouvé pour cet ID :", id);
+      return res.status(404).json({ message: "Lot non trouvé pour cet ID." });
     }
 
     console.log("✅ Lot trouvé :", JSON.stringify(batch, null, 2));
@@ -283,6 +258,7 @@ exports.getReceiptBatchById = async (req, res) => {
     return res.status(500).json({ message: "Erreur interne du serveur" });
   }
 };
+
 
 exports.getTotalGeneratedReceipts = async (req, res) => {
   //console.log("📥 Début de la récupération du nombre de reçus générés...");
@@ -343,77 +319,6 @@ exports.activateReceiptBatch = async (req, res) => {
   }
 };
 
-
-
-
-// exports.getActivatedReceiptsByMarket = async (req, res) => {
-//   try {
-//     const { marketId } = req.params;
-
-//     // Log: ID du marché reçu
-//     //console.log("📥 Requête pour les reçus activés du marché ID :", marketId);
-
-//     // Vérification de la validité de l'ID du marché
-//     if (!marketId) {
-//       console.error("❌ ID du marché manquant dans la requête.");
-//       return res.status(400).json({ message: 'ID du marché requis.' });
-//     }
-
-//     // Requête pour trouver les reçus activés pour le marché donné
-//     const receipts = await ReceiptBatch.find({
-//       market: marketId,
-//       status: 'Activated',
-//     })
-//       .select('market collector startReceipt endReceipt confirmationCodes status activatedAt') // Sélectionner uniquement les champs nécessaires
-//       .populate('market', 'name location') // Inclure les détails du marché
-//       .populate('collector', 'name phone'); // Inclure les détails du collecteur
-
-//     // Log: Résultat de la requête
-//     //console.log("🔍 Résultat des reçus activés :", receipts);
-
-//     // Vérification si aucun reçu n'est trouvé
-//     if (!receipts.length) {
-//       console.warn("⚠️ Aucun reçu activé trouvé pour ce marché :", marketId);
-//       return res.status(404).json({ message: 'Aucun reçu activé trouvé pour ce marché.' });
-//     }
-
-//     // Filtrer pour retourner uniquement les reçus non utilisés
-//     const filteredReceipts = receipts.map((batch) => {
-//       const unusedReceipts = batch.confirmationCodes.filter(
-//         (code) => code.status === 'Activated'
-//       );
-
-//       return {
-//         _id: batch._id,
-//         market: batch.market,
-//         collector: batch.collector,
-//         startReceipt: batch.startReceipt,
-//         endReceipt: batch.endReceipt,
-//         status: batch.status,
-//         activatedAt: batch.activatedAt,
-//         confirmationCodes: unusedReceipts, // Inclure uniquement les reçus non utilisés
-//       };
-//     });
-
-//     // Vérifier si après le filtrage il reste des reçus activés
-//     const hasReceipts = filteredReceipts.some(
-//       (batch) => batch.confirmationCodes.length > 0
-//     );
-
-//     if (!hasReceipts) {
-//       console.warn("⚠️ Aucun reçu activé disponible pour ce marché après filtrage.");
-//       return res.status(404).json({ message: 'Aucun reçu activé disponible pour ce marché.' });
-//     }
-
-//     // Log: Réponse avant envoi
-//     //console.log("✅ Reçus activés disponibles :", filteredReceipts);
-//     res.status(200).json({ receipts: filteredReceipts });
-//   } catch (error) {
-//     // Log: Erreur du serveur
-//     console.error("❌ Erreur lors de la récupération des reçus activés :", error.message);
-//     res.status(500).json({ message: 'Erreur interne du serveur.', error: error.message });
-//   }
-// };
 
 
 
@@ -548,27 +453,6 @@ exports.exportBatch = async (req, res) => {
 };
 
 
-
-// exports.getActiveReceiptsForCollector = async (req, res) => {
-//   try {
-//     const collectorId = req.user.id; // Récupérer l'ID du collecteur connecté
-
-//     // Rechercher les lots de reçus activés attribués à ce collecteur
-//     const activeReceipts = await ReceiptBatch.find({
-//       collector: collectorId,
-//       status: 'Activated',
-//     }).populate('market', 'name location'); // Inclure les informations du marché
-
-//     if (!activeReceipts.length) {
-//       return res.status(404).json({ message: "Aucun reçu activé trouvé pour ce collecteur." });
-//     }
-
-//     res.status(200).json({ activeReceipts });
-//   } catch (err) {
-//     console.error("Erreur lors de la récupération des reçus activés :", err.message);
-//     res.status(500).json({ message: "Erreur interne du serveur." });
-//   }
-// };
 
 exports.getActiveReceiptsForCollector = async (req, res) => {
   try {
