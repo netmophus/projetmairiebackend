@@ -1,28 +1,58 @@
 
-// const jwt = require('jsonwebtoken');
 
-// const authMiddleware = (req, res, next) => {
+
+// const jwt = require('jsonwebtoken');
+// const Collector = require('../models/Collector');
+// const Taxpayer = require('../models/Taxpayer');
+// const Market = require('../models/Market');
+
+// const authMiddleware = async (req, res, next) => {
 //   const token = req.headers.authorization?.split(' ')[1];
-  
+
 //   if (!token) {
 //     console.error('❌ Erreur : Token manquant dans les headers');
 //     return res.status(401).json({ message: 'Non autorisé, token manquant' });
 //   }
 
 //   try {
-//     //console.log('🔍 Token reçu :', token); // Log du token reçu
-//     const decoded = jwt.verify(token, process.env.JWT_SECRET); // Assure-toi que la clé correspond à celle utilisée pour signer
-//     //console.log('✅ Token décodé avec succès :', decoded); // Log du contenu décodé du token
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
 //     req.user = {
 //       id: decoded.id,
-//       name: decoded.name,  // 🔥 Assure-toi que le nom est bien inclus dans le token
+//       name: decoded.name,
 //       role: decoded.role,
-//       phone: decoded.phone, // Assure-toi que ces champs sont inclus dans le token
+//       phone: decoded.phone,
 //     };
 
+//     // 🔥 Si c'est un `Collector`
+//     if (req.user.role === 'collector') {
+//       const collector = await Collector.findOne({ user: req.user.id }).populate('assignedZones').select('_id assignedZones');
+//       if (collector) {
+//         req.user.collectorId = collector._id;
+//         req.user.assignedZones = collector.assignedZones;
+//         console.log('📋 Zones assignées au collecteur :', req.user.assignedZones);
+//       } else {
+//         console.error('❌ Erreur : Collecteur non trouvé.');
+//         return res.status(404).json({ message: 'Collecteur non trouvé.' });
+//       }
+//     }
 
-  
+//     // 🔥 Si c'est un `Taxpayer`
+//     if (req.user.role === 'contribuable') {
+//       const taxpayer = await Taxpayer.findOne({ user: req.user.id }).select('_id');
+//       if (taxpayer) {
+//         req.user.taxpayerId = taxpayer._id;
+//       }
+//     }
+
+//     // 🔥 Si c'est un `chefmarket` → essaie de récupérer son marché, mais ne bloque pas
+//     if (req.user.role === 'chefmarket') {
+//       const market = await Market.findOne({ chefmarket: req.user.id });
+//       if (market) {
+//         req.user.marketId = market._id;
+//       }
+//       // ❌ Ne pas bloquer s'il n'en a pas encore (utile pour POST /my-market)
+//     }
 
 //     next();
 //   } catch (err) {
@@ -35,52 +65,73 @@
 
 
 
-// 📌 Importation des modules nécessaires
 const jwt = require('jsonwebtoken');
 const Collector = require('../models/Collector');
+const MarketCollector = require('../models/MarketCollector');
 const Taxpayer = require('../models/Taxpayer');
+const Market = require('../models/Market');
 
 const authMiddleware = async (req, res, next) => {
-  // ✅ Récupération du token depuis les headers
   const token = req.headers.authorization?.split(' ')[1];
-  
-  // ✅ Vérification de l'existence du token
+
   if (!token) {
     console.error('❌ Erreur : Token manquant dans les headers');
     return res.status(401).json({ message: 'Non autorisé, token manquant' });
   }
 
   try {
-    // ✅ Décodage du token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // 📌 Ajoute les informations de base du User
     req.user = {
       id: decoded.id,
       name: decoded.name,
       role: decoded.role,
       phone: decoded.phone,
+      collectorType: decoded.collectorType || null,
     };
 
-    // 🔥 Si c'est un `Collector`, on récupère son ID et les zones assignées
+    // 🔥 Si c’est un collecteur
     if (req.user.role === 'collector') {
-      const collector = await Collector.findOne({ user: req.user.id }).populate('assignedZones').select('_id assignedZones'); 
-      
-      if (collector) {
-        req.user.collectorId = collector._id; // ✅ Ajoute l'ID du `Collector`
-        req.user.assignedZones = collector.assignedZones; // ✅ Ajoute les zones assignées
-        console.log('📋 Zones assignées au collecteur :', req.user.assignedZones);
+      if (req.user.collectorType === 'marche') {
+        const mc = await MarketCollector.findOne({ user: req.user.id })
+          .populate('assignedMarkets')
+          .select('_id assignedMarkets');
+
+        if (!mc) {
+          console.error('❌ Erreur : Collecteur de marché non trouvé.');
+          return res.status(404).json({ message: 'Collecteur de marché non trouvé.' });
+        }
+
+        req.user.collectorId = mc._id;
+        req.user.assignedMarkets = mc.assignedMarkets;
       } else {
-        console.error('❌ Erreur : Collecteur non trouvé.');
-        return res.status(404).json({ message: 'Collecteur non trouvé.' });
+        const collector = await Collector.findOne({ user: req.user.id })
+          .populate('assignedZones')
+          .select('_id assignedZones');
+
+        if (!collector) {
+          console.error('❌ Erreur : Collecteur mairie non trouvé.');
+          return res.status(404).json({ message: 'Collecteur mairie non trouvé.' });
+        }
+
+        req.user.collectorId = collector._id;
+        req.user.assignedZones = collector.assignedZones;
       }
     }
 
-    // 🔥 Si c'est un `Taxpayer`, on récupère son ID
+    // 🔥 Si c’est un contribuable
     if (req.user.role === 'contribuable') {
       const taxpayer = await Taxpayer.findOne({ user: req.user.id }).select('_id');
       if (taxpayer) {
-        req.user.taxpayerId = taxpayer._id; // ✅ Ajoute l'ID du `Taxpayer`
+        req.user.taxpayerId = taxpayer._id;
+      }
+    }
+
+    // 🔥 Si c’est un chef de marché
+    if (req.user.role === 'chefmarket') {
+      const market = await Market.findOne({ chefmarket: req.user.id });
+      if (market) {
+        req.user.marketId = market._id;
       }
     }
 

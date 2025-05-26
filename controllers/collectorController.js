@@ -14,7 +14,7 @@ const addCollector = async (req, res) => {
   console.log("➡️ Début de la création d’un collecteur...");
   
   try {
-    const { name, phone, email, password, idDocument, address, assignedZones, hireDate } = req.body;
+    const { name, phone, email, password, idDocument, address, assignedZones, hireDate, collectorType } = req.body;
     console.log("📥 Données reçues :", req.body);
 
     // Vérifier si le champ phone est bien défini et non vide
@@ -45,6 +45,8 @@ const addCollector = async (req, res) => {
       email,
       password: hashedPassword,
       role: "collector",
+      collectorType: 'mairie', // en dur dans le backend
+      createdBy: req.user.id, // 🔥 Ajout essentiel ici
     });
 
     await newUser.save();
@@ -90,20 +92,40 @@ const addCollector = async (req, res) => {
 };
 
 
+// const getCollectors = async (req, res) => {
+//   try {
+//     // Récupérer tous les collecteurs avec leurs informations utilisateur
+//     const collectors = await Collector.find()
+//       .populate('user', 'name phone email') // Récupérer les infos de l'utilisateur associé
+//       .populate('assignedZones', 'name description'); // Récupérer les infos des zones associées
+
+//     res.status(200).json(collectors);
+//   } catch (err) {
+//     console.error('Erreur lors de la récupération des collecteurs :', err.message);
+//     res.status(500).json({ message: 'Erreur interne du serveur.' });
+//   }
+// };
+
 const getCollectors = async (req, res) => {
   try {
-    // Récupérer tous les collecteurs avec leurs informations utilisateur
+    // 🔍 Trouve tous les collecteurs, mais ne garde que ceux créés par l'utilisateur connecté
     const collectors = await Collector.find()
-      .populate('user', 'name phone email') // Récupérer les infos de l'utilisateur associé
-      .populate('assignedZones', 'name description'); // Récupérer les infos des zones associées
+      .populate({
+        path: 'user',
+        select: 'name phone email',
+        match: { createdBy: req.user.id }, // 🔥 Filtre par créateur (le chef connecté)
+      })
+      .populate('assignedZones', 'name description');
 
-    res.status(200).json(collectors);
+    // 🔁 Filtrer ceux dont l'utilisateur associé a été trouvé (match réussi)
+    const filtered = collectors.filter((c) => c.user);
+
+    res.status(200).json(filtered);
   } catch (err) {
-    console.error('Erreur lors de la récupération des collecteurs :', err.message);
+    console.error('❌ Erreur lors de la récupération des collecteurs :', err.message);
     res.status(500).json({ message: 'Erreur interne du serveur.' });
   }
 };
-
 
 
 

@@ -9,3 +9,5 @@ config.js
 # Ignorer les logs et les fichiers temporaires
 logs/
 .DS_Store
+uploads/
+

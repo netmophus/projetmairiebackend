@@ -25,6 +25,14 @@ const taxpayertaxRoutes = require("./routes/taxpayertaxRoutes");
 
 const taxAssessmentRoutes = require("./routes/taxAssessmentRoutes");
 const unpaidRoutes = require("./routes/unpaidRoutes"); // ✅ Ajouté
+const chefMarketRoutes = require('./routes/chefMarketRoutes');
+
+const chefMarketBoutiqueModelRoutes = require('./routes/chefMarketBoutiqueModelRoutes');
+
+const chefmarcheReportingRoutes = require('./routes/chefmarchereportingRoutes');
+
+
+
 
 // 📌 PLACE LE CRON ICI
 const cron = require('node-cron');
@@ -48,7 +56,7 @@ const allowedOrigins = [
   'http://127.0.0.1:3000',
   'http://localhost:3001',
   'http://localhost:3002',
-  'http://192.168.0.100:5000'
+  
 ];
 
 
@@ -134,6 +142,9 @@ mongoose.connect(process.env.MONGO_URI)
     process.exit(1);
   });
 
+  // dans server.js
+app.use('/uploads', express.static('uploads'));
+
 
 // 📌 6️⃣ Routes API
 app.use('/api/auth', authRoutes);
@@ -174,6 +185,17 @@ app.use("/api/tax-assessments", taxAssessmentRoutes);
 
 
 app.use("/api/unpaid-taxes", unpaidRoutes); // ✅ Nouvelle route pour les impayés
+
+
+app.use("/api/chefmarket", chefMarketRoutes);
+
+app.use('/api/chefmarket/boutique-models', chefMarketBoutiqueModelRoutes);
+
+app.use('/api/profile', require('./routes/profileRoutes'));
+
+app.use('/api/market-collector', require('./routes/marketCollectorRoutes'));
+
+app.use('/api/chefmarche', chefmarcheReportingRoutes);
 
 // 📌 7️⃣ Route de test API
 app.get('/', (req, res) => {

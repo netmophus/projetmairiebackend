@@ -3,7 +3,8 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User'); // Assurez-vous que le chemin correspond à votre modèle
 const Otp = require('../models/Otp');
 const { sendSMS } = require('../utils/sendSMS'); // ✅ Import de sendSMS
-
+// authController.js (ou où se trouve loginUser)
+const MarketCollector = require('../models/MarketCollector');
 
 const registerUser = async (req, res) => {
   try {
@@ -26,6 +27,7 @@ const registerUser = async (req, res) => {
       password: hashedPassword,
       role: role || 'taxpayer', // Par défaut, rôle contribuable
       status: status || 'active', // Par défaut, statut actif
+      createdBy: req.user ? req.user._id : null // 🔍 Ajoute l'ID du créateur si disponible
     });
 
     await newUser.save();
@@ -50,77 +52,131 @@ const registerUser = async (req, res) => {
 
 
 
-const loginUser = async (req, res) => {
-  try {
-    console.log('Début du processus de connexion...');
-    const { phone, password } = req.body;
+// const loginUser = async (req, res) => {
+//   try {
+//     console.log('Début du processus de connexion...');
+//     const { phone, password } = req.body;
 
-    console.log('Données reçues :', { phone, password: '********' }); // Ne loguez jamais le mot de passe en clair
+//     console.log('Données reçues :', { phone, password: '********' }); // Ne loguez jamais le mot de passe en clair
 
-    // Vérification si l'utilisateur existe
-    console.log('Recherche de l\'utilisateur avec le téléphone :', phone);
-    const user = await User.findOne({ phone });
-    if (!user) {
-      console.error('Utilisateur non trouvé avec ce téléphone :', phone);
-      return res.status(400).json({ message: 'Utilisateur non trouvé.' });
-    }
+//     // Vérification si l'utilisateur existe
+//     console.log('Recherche de l\'utilisateur avec le téléphone :', phone);
+//     const user = await User.findOne({ phone });
+//     if (!user) {
+//       console.error('Utilisateur non trouvé avec ce téléphone :', phone);
+//       return res.status(400).json({ message: 'Utilisateur non trouvé.' });
+//     }
 
-    console.log('Utilisateur trouvé :', {
-      id: user._id,
-      name: user.name,
-      phone: user.phone,
-      role: user.role,
-    });
+//     console.log('Utilisateur trouvé :', {
+//       id: user._id,
+//       name: user.name,
+//       phone: user.phone,
+//       role: user.role,
+//       collectorType: user.collectorType || null, // ✅ AJOUT ICI
+//     });
 
 
-      // ✅ Vérifier si l'utilisateur est désactivé
-      if (user.status !== 'active') {
-        return res.status(403).json({ message: "Compte désactivé. Veuillez contacter l'administrateur." });
-      }
+//       // ✅ Vérifier si l'utilisateur est désactivé
+//       if (user.status !== 'active') {
+//         return res.status(403).json({ message: "Compte désactivé. Veuillez contacter l'administrateur." });
+//       }
   
 
-    // Vérification du mot de passe
-    console.log('Vérification du mot de passe...');
+//     // Vérification du mot de passe
+//     console.log('Vérification du mot de passe...');
+//     const isMatch = await bcrypt.compare(password, user.password);
+//     if (!isMatch) {
+//       console.error('Mot de passe incorrect pour l\'utilisateur :', phone);
+//       return res.status(400).json({ message: 'Mot de passe incorrect.' });
+//     }
+
+//     console.log('Mot de passe vérifié avec succès.');
+
+//     // Génération du token JWT
+//     console.log('Génération du token JWT...');
+//     const token = jwt.sign(
+//       { id: user._id, role: user.role, phone: user.phone ,  name: user.name, },
+//       process.env.JWT_SECRET || 'secretKey', // Utiliser une clé secrète dans .env
+//       { expiresIn: '7d' }
+//     );
+
+//     console.log('Token généré avec succès :', token);
+
+//     res.status(200).json({
+//       message: 'Connexion réussie.',
+//       token,
+//       user: {
+//         id: user._id,
+//         name: user.name,
+//         phone: user.phone,
+//         role: user.role,
+//       },
+//     });
+//     console.log('Connexion réussie pour l\'utilisateur :', user.name);
+//   } catch (err) {
+//     console.error('Erreur lors du processus de connexion :', err.message);
+//     res.status(500).json({
+//       message: 'Erreur lors de la connexion.',
+//       error: err.message,
+//     });
+//   }
+// };
+
+
+// ✅ Générer un OTP aléatoire
+
+const loginUser = async (req, res) => {
+  try {
+    const { phone, password } = req.body;
+    const user = await User.findOne({ phone });
+    if (!user) return res.status(400).json({ message: 'Utilisateur non trouvé.' });
+    if (user.status !== 'active') return res.status(403).json({ message: 'Compte désactivé.' });
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      console.error('Mot de passe incorrect pour l\'utilisateur :', phone);
-      return res.status(400).json({ message: 'Mot de passe incorrect.' });
+    if (!isMatch) return res.status(400).json({ message: 'Mot de passe incorrect.' });
+
+    // → ICI on détermine collectorType
+    let collectorType = null;
+    if (user.role === 'collector') {
+      const mc = await MarketCollector.findOne({
+        user: user._id,
+        assignedMarkets: { $exists: true, $ne: [] },
+      });
+      collectorType = mc ? 'marche' : 'mairie';
     }
 
-    console.log('Mot de passe vérifié avec succès.');
+   // controllers/authController.js
+const token = jwt.sign(
+  {
+    id: user._id,
+    role: user.role,
+    phone: user.phone,
+    name: user.name,
+    collectorType: user.collectorType || null,    // ← on ajoute collectorType
+  },
+  process.env.JWT_SECRET,
+  { expiresIn: '7d' }
+);
 
-    // Génération du token JWT
-    console.log('Génération du token JWT...');
-    const token = jwt.sign(
-      { id: user._id, role: user.role, phone: user.phone ,  name: user.name, },
-      process.env.JWT_SECRET || 'secretKey', // Utiliser une clé secrète dans .env
-      { expiresIn: '7d' }
-    );
+res.status(200).json({
+  message: 'Connexion réussie.',
+  token,
+  user: {
+    id: user._id,
+    name: user.name,
+    phone: user.phone,
+    role: user.role,
+    collectorType: user.collectorType || null,   // ← et dans l’objet user
+  },
+});
 
-    console.log('Token généré avec succès :', token);
-
-    res.status(200).json({
-      message: 'Connexion réussie.',
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        phone: user.phone,
-        role: user.role,
-      },
-    });
-    console.log('Connexion réussie pour l\'utilisateur :', user.name);
   } catch (err) {
-    console.error('Erreur lors du processus de connexion :', err.message);
-    res.status(500).json({
-      message: 'Erreur lors de la connexion.',
-      error: err.message,
-    });
+    console.error('Erreur connexion :', err);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
 
 
-// ✅ Générer un OTP aléatoire
+
 const generateOtp = () => {
   return Math.floor(100000 + Math.random() * 900000).toString(); // 6 chiffres
 };
